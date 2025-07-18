@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "office-addin-debugging": "^6.0.3",
+    "office-addin-dev-certs": "^2.0.3",
+    "vite-plugin-office-addin": "^2.1.0"
+  }
+}
