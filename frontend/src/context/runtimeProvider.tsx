@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import {
   AssistantRuntimeProvider,
+  useLocalRuntime,
+  type ChatModelAdapter,
 } from "@assistant-ui/react";
-import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import { useExcelContext, formatExcelContextForAI } from "../hooks/useExcelContext";
 
 
@@ -174,29 +175,39 @@ export function MyRuntimeProvider({
 }>) {
   const { context: excelContext, actions: excelActions } = useExcelContext();
 
-  const runtime = useChatRuntime({
-    api: "http://localhost:8000/api/chat",
-    body: async ({ messages }: { messages: any[] }) => {
+  // Create a proper ChatModelAdapter with streaming support
+  const MyModelAdapter: ChatModelAdapter = {
+    async *run({ messages, abortSignal }) {
+      console.log('🚀 [LocalRuntime] Starting streaming run with messages:', messages);
+
       // Preprocess the last message for Excel keywords
+      let processedMessages = [...messages];
       const lastMessage = messages[messages.length - 1];
       
-      if (lastMessage?.role === 'user' && lastMessage.content && excelContext.isExcelReady) {
+      if (lastMessage?.role === 'user' && lastMessage.content?.[0]?.type === 'text' && excelContext.isExcelReady) {
+        const originalContent = lastMessage.content[0].text;
         const preprocessedContent = await preprocessMessageContent(
-          lastMessage.content, 
+          originalContent, 
           excelContext, 
           excelActions
         );
         
         // Update the message with preprocessed content if it changed
-        if (preprocessedContent !== lastMessage.content) {
-          messages = [...messages.slice(0, -1), { ...lastMessage, content: preprocessedContent }];
-          console.log('🔄 [RuntimeProvider] Preprocessed message with Excel keywords');
+        if (preprocessedContent !== originalContent) {
+          processedMessages = [
+            ...messages.slice(0, -1), 
+            {
+              ...lastMessage,
+              content: [{ type: 'text', text: preprocessedContent }]
+            }
+          ];
+          console.log('🔄 [LocalRuntime] Preprocessed message with Excel keywords');
         }
       }
 
       const requestBody = {
-        messages,
-        tools: [] as any[],
+        messages: processedMessages,
+        tools: [],
         system: `You are an AI assistant integrated with Microsoft Excel. You have access to the current Excel workbook and can read and modify Excel data.
 
 ${formatExcelContextForAI(excelContext)}
@@ -219,10 +230,93 @@ Users can use these keywords in their messages:
 - @workbook_info: Replaced with workbook information`,
       };
 
-      console.log('📤 [RuntimeProvider] Sending request body:', JSON.stringify(requestBody, null, 2));
-      return requestBody;
+      console.log('📤 [LocalRuntime] Sending request body:', JSON.stringify(requestBody, null, 2));
+
+      const response = await fetch("http://localhost:8000/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+        signal: abortSignal,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [LocalRuntime] Request failed:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      console.log('✅ [LocalRuntime] Response received, starting stream processing...');
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Process complete lines
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ""; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.trim()) {
+              try {
+                // Parse the streaming format: 0:"text"
+                if (line.startsWith('0:')) {
+                  const jsonStr = line.substring(2);
+                  const chunk = JSON.parse(jsonStr);
+                  fullText += chunk;
+                  
+                  console.log('📥 [LocalRuntime] Stream chunk:', chunk);
+                  
+                  // Yield the current accumulated text
+                  yield {
+                    content: [{ type: "text" as const, text: fullText }],
+                  };
+                }
+              } catch (error) {
+                console.warn('⚠️ [LocalRuntime] Failed to parse chunk:', line, error);
+              }
+            }
+          }
+        }
+        
+        // Process any remaining buffer
+        if (buffer.trim()) {
+          try {
+            if (buffer.startsWith('0:')) {
+              const jsonStr = buffer.substring(2);
+              const chunk = JSON.parse(jsonStr);
+              fullText += chunk;
+              
+              yield {
+                content: [{ type: "text" as const, text: fullText }],
+              };
+            }
+          } catch (error) {
+            console.warn('⚠️ [LocalRuntime] Failed to parse final chunk:', buffer, error);
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      console.log('📥 [LocalRuntime] Stream complete. Final text:', fullText);
     },
-  });
+  };
+
+  const runtime = useLocalRuntime(MyModelAdapter);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
