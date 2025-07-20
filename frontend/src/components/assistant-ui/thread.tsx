@@ -2,7 +2,6 @@ import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
   ComposerPrimitive,
-  ErrorPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
 } from "@assistant-ui/react";
@@ -16,46 +15,43 @@ import {
   PencilIcon,
   RefreshCwIcon,
   SendHorizontalIcon,
-  SquareIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
-import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
 import { ExcelContextButton } from "@/components/assistant-ui/excel-context-button";
 
-// Debug component removed - ExcelBridge now has comprehensive logging built-in
 export const Thread: FC = () => {
   return (
     <ThreadPrimitive.Root
-        className="bg-background box-border flex h-full flex-col overflow-hidden"
-        style={{
-          ["--thread-max-width" as string]: "42rem",
-        }}
-      >
-        <ThreadPrimitive.Viewport className="flex h-full flex-col items-center overflow-hidden scroll-smooth bg-inherit px-4 pt-8">
-          <ThreadWelcome />
+      className="aui-root aui-thread-root"
+      style={{
+        ["--thread-max-width" as string]: "100%",
+      }}
+    >
+      <ThreadPrimitive.Viewport className="aui-thread-viewport">
+        <ThreadWelcome />
 
-          <ThreadPrimitive.Messages
-            components={{
-              UserMessage: UserMessage,
-              EditComposer: EditComposer,
-              AssistantMessage: AssistantMessage,
-            }}
-          />
+        <ThreadPrimitive.Messages
+          components={{
+            UserMessage: UserMessage,
+            EditComposer: EditComposer,
+            AssistantMessage: AssistantMessage,
+          }}
+        />
 
-          <ThreadPrimitive.If empty={false}>
-            <div className="min-h-8 flex-grow" />
-          </ThreadPrimitive.If>
+        <ThreadPrimitive.If empty={false}>
+          <div className="aui-thread-viewport-spacer" />
+        </ThreadPrimitive.If>
 
-          <div className="sticky bottom-0 mt-3 flex w-full max-w-[var(--thread-max-width)] flex-col items-center justify-end rounded-t-lg bg-inherit pb-4">
-            <ThreadScrollToBottom />
-            <Composer />
-          </div>
-        </ThreadPrimitive.Viewport>
-      </ThreadPrimitive.Root>
+        <div className="aui-thread-viewport-footer">
+          <ThreadScrollToBottom />
+          <Composer />
+        </div>
+      </ThreadPrimitive.Viewport>
+    </ThreadPrimitive.Root>
   );
 };
 
@@ -65,7 +61,7 @@ const ThreadScrollToBottom: FC = () => {
       <TooltipIconButton
         tooltip="Scroll to bottom"
         variant="outline"
-        className="absolute -top-8 rounded-full disabled:invisible"
+        className="aui-thread-scroll-to-bottom"
       >
         <ArrowDownIcon />
       </TooltipIconButton>
@@ -76,12 +72,11 @@ const ThreadScrollToBottom: FC = () => {
 const ThreadWelcome: FC = () => {
   return (
     <ThreadPrimitive.Empty>
-      <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">
-            How can I help you today?
-          </p>
+      <div className="aui-thread-welcome-root">
+        <div className="aui-thread-welcome-center">
+          <p className="aui-thread-welcome-message">How can I help you today?</p>
         </div>
+        <ThreadWelcomeSuggestions />
       </div>
     </ThreadPrimitive.Empty>
   );
@@ -89,25 +84,25 @@ const ThreadWelcome: FC = () => {
 
 const ThreadWelcomeSuggestions: FC = () => {
   return (
-    <div className="mt-3 flex w-full items-stretch justify-center gap-4">
+    <div className="aui-thread-welcome-suggestions">
       <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="What is the weather in Tokyo?"
+        className="aui-thread-welcome-suggestion"
+        prompt="Analyze my selected data"
         method="replace"
         autoSend
       >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          What is the weather in Tokyo?
+        <span className="aui-thread-welcome-suggestion-text">
+          Analyze my selected data
         </span>
       </ThreadPrimitive.Suggestion>
       <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="What is assistant-ui?"
+        className="aui-thread-welcome-suggestion"
+        prompt="Help with Excel formulas"
         method="replace"
         autoSend
       >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          What is assistant-ui?
+        <span className="aui-thread-welcome-suggestion-text">
+          Help with Excel formulas
         </span>
       </ThreadPrimitive.Suggestion>
     </div>
@@ -116,61 +111,72 @@ const ThreadWelcomeSuggestions: FC = () => {
 
 const Composer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="flex w-full flex-wrap items-end rounded-[10px] border border-gray-600 bg-gray-700 px-3 shadow-sm transition-colors ease-in focus-within:border-blue-500">
-      <ComposerPrimitive.Input
-        rows={1}
-        autoFocus
-        placeholder="Write a message..."
-        className="placeholder:text-gray-400 max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed text-white overflow-hidden"
-        style={{
-          overflow: 'hidden',
-          resize: 'none'
-        }}
-      />
-      <ComposerAction />
+    <ComposerPrimitive.Root className="aui-composer-root">
+      {/* Upper section: Text input */}
+      <div className="aui-composer-input-section">
+        <ComposerPrimitive.Input
+          rows={1}
+          autoFocus
+          placeholder="Write a message..."
+          className="aui-composer-input"
+        />
+      </div>
+      
+      {/* Lower section: Button area */}
+      <div className="aui-composer-button-section">
+        <ComposerAction />
+      </div>
     </ComposerPrimitive.Root>
   );
 };
+
 const ComposerAction: FC = () => {
   return (
     <>
-      {/* Excel Context Button - shows current Excel state */}
-      <ExcelContextButton />
+      {/* Left side: Excel Context Button */}
+      <div className="aui-composer-button-left">
+        <ExcelContextButton />
+      </div>
       
-      <ThreadPrimitive.If running={false}>
-        <ComposerPrimitive.Send asChild>
-          <TooltipIconButton
-            tooltip=""
-            variant="default"
-            className="my-2.5 size-8 p-2 transition-opacity ease-in"
-          >
-            <SendHorizontalIcon />
-          </TooltipIconButton>
-        </ComposerPrimitive.Send>
-      </ThreadPrimitive.If>
-      <ThreadPrimitive.If running>
-        <ComposerPrimitive.Cancel asChild>
-          <TooltipIconButton
-            tooltip=""
-            variant="default"
-            className="my-2.5 size-5 p-2 transition-opacity ease-in"
-          >
-            <CircleStopIcon />
-          </TooltipIconButton>
-        </ComposerPrimitive.Cancel>
-      </ThreadPrimitive.If>
+      {/* Right side: Submit/Cancel button */}
+      <div className="aui-composer-button-right">
+        <ThreadPrimitive.If running={false}>
+          <ComposerPrimitive.Send asChild>
+            <TooltipIconButton
+              tooltip="Send"
+              variant="default"
+              className="aui-composer-send"
+            >
+              <SendHorizontalIcon />
+            </TooltipIconButton>
+          </ComposerPrimitive.Send>
+        </ThreadPrimitive.If>
+        <ThreadPrimitive.If running>
+          <ComposerPrimitive.Cancel asChild>
+            <TooltipIconButton
+              tooltip="Cancel"
+              variant="default"
+              className="aui-composer-cancel"
+            >
+              <CircleStopIcon />
+            </TooltipIconButton>
+          </ComposerPrimitive.Cancel>
+        </ThreadPrimitive.If>
+      </div>
     </>
   );
 };
 
 const UserMessage: FC = () => {
   return (
-    <MessagePrimitive.Root className="grid auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 [&:where(>*)]:col-start-2 w-full max-w-[var(--thread-max-width)] py-4">
-      <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-3xl px-5 py-2.5 col-start-2 row-start-2">
-        <MessagePrimitive.Content />
+    <MessagePrimitive.Root className="aui-user-message-root">
+      <UserActionBar />
+
+      <div className="aui-user-message-content">
+        <MessagePrimitive.Parts />
       </div>
 
-      <BranchPicker className="col-span-full col-start-1 row-start-3 -mr-1 justify-end" />
+      <BranchPicker className="aui-user-branch-picker" />
     </MessagePrimitive.Root>
   );
 };
@@ -180,7 +186,7 @@ const UserActionBar: FC = () => {
     <ActionBarPrimitive.Root
       hideWhenRunning
       autohide="not-last"
-      className="flex flex-col items-end col-start-1 row-start-2 mr-3 mt-2.5"
+      className="aui-user-action-bar-root"
     >
       <ActionBarPrimitive.Edit asChild>
         <TooltipIconButton tooltip="Edit">
@@ -193,10 +199,10 @@ const UserActionBar: FC = () => {
 
 const EditComposer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-xl">
-      <ComposerPrimitive.Input className="text-foreground flex h-8 w-full resize-none bg-transparent p-4 pb-0 outline-none" />
+    <ComposerPrimitive.Root className="aui-edit-composer-root">
+      <ComposerPrimitive.Input className="aui-edit-composer-input" />
 
-      <div className="mx-3 mb-3 flex items-center justify-center gap-2 self-end">
+      <div className="aui-edit-composer-footer">
         <ComposerPrimitive.Cancel asChild>
           <Button variant="ghost">Cancel</Button>
         </ComposerPrimitive.Cancel>
@@ -210,31 +216,15 @@ const EditComposer: FC = () => {
 
 const AssistantMessage: FC = () => {
   return (
-    <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
-      <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7 col-span-2 col-start-2 row-start-1 my-1.5">
-        <MessagePrimitive.Content 
-          components={{ 
-            Text: MarkdownText,
-            tools: {
-              Fallback: ToolFallback
-            }
-          }} 
-        />
-        <MessageError />
+    <MessagePrimitive.Root className="aui-assistant-message-root">
+      <div className="aui-assistant-message-content">
+        <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
       </div>
-      <BranchPicker className="col-start-2 row-start-2 -ml-2 mr-2" />
-      <AssistantActionBar />
-    </MessagePrimitive.Root>
-  );
-};
 
-const MessageError: FC = () => {
-  return (
-    <MessagePrimitive.Error>
-      <ErrorPrimitive.Root className="border-destructive bg-destructive/10 dark:text-red-200 dark:bg-destructive/5 text-destructive mt-2 rounded-md border p-3 text-sm">
-        <ErrorPrimitive.Message className="line-clamp-2" />
-      </ErrorPrimitive.Root>
-    </MessagePrimitive.Error>
+      <AssistantActionBar />
+
+      <BranchPicker className="aui-assistant-branch-picker" />
+    </MessagePrimitive.Root>
   );
 };
 
@@ -244,7 +234,7 @@ const AssistantActionBar: FC = () => {
       hideWhenRunning
       autohide="not-last"
       autohideFloat="single-branch"
-      className="text-muted-foreground flex gap-1 col-start-3 row-start-2 -ml-1 data-[floating]:bg-background data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
+      className="aui-assistant-action-bar-root"
     >
       <ActionBarPrimitive.Copy asChild>
         <TooltipIconButton tooltip="Copy">
@@ -272,7 +262,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
   return (
     <BranchPickerPrimitive.Root
       hideWhenSingleBranch
-      className={cn("text-muted-foreground inline-flex items-center text-xs", className)}
+      className={cn("aui-branch-picker-root", className)}
       {...rest}
     >
       <BranchPickerPrimitive.Previous asChild>
@@ -280,7 +270,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
           <ChevronLeftIcon />
         </TooltipIconButton>
       </BranchPickerPrimitive.Previous>
-      <span className="font-medium">
+      <span className="aui-branch-picker-state">
         <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
       </span>
       <BranchPickerPrimitive.Next asChild>
@@ -293,5 +283,15 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
 };
 
 const CircleStopIcon = () => {
-  return <SquareIcon size={16} />;
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      width="16"
+      height="16"
+    >
+      <rect width="10" height="10" x="3" y="3" rx="2" />
+    </svg>
+  );
 };

@@ -6,6 +6,7 @@ import type { ComponentPropsWithoutRef } from "react";
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -21,21 +22,25 @@ export const TooltipIconButton = forwardRef<
   TooltipIconButtonProps
 >(({ children, tooltip, side = "bottom", className, ...rest }, ref) => {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          {...rest}
-          className={cn("aui-button-icon", className)}
-          ref={ref}
-        >
-          {children}
-          <span className="aui-sr-only">{tooltip}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side={side}>{tooltip}</TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            {...rest}
+            className={cn("aui-button-icon", className)}
+            ref={ref}
+          >
+            {children}
+            <span className="aui-sr-only">{tooltip}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side={side} className="aui-tooltip-content">
+          {tooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 
