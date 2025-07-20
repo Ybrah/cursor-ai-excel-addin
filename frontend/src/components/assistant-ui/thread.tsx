@@ -16,42 +16,46 @@ import {
   PencilIcon,
   RefreshCwIcon,
   SendHorizontalIcon,
+  SquareIcon,
 } from "lucide-react";
-import { cn } from "/lib/utils";
+import { cn } from "@/lib/utils";
 
-import { Button } from "/components/ui/button";
-import { MarkdownText } from "/components/assistant-ui/markdown-text";
-import { TooltipIconButton } from "/components/assistant-ui/tooltip-icon-button";
+import { Button } from "@/components/ui/button";
+import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
+import { ExcelContextButton } from "@/components/assistant-ui/excel-context-button";
 
+// Debug component removed - ExcelBridge now has comprehensive logging built-in
 export const Thread: FC = () => {
   return (
     <ThreadPrimitive.Root
-      className="bg-background box-border flex h-full flex-col overflow-hidden"
-      style={{
-        ["--thread-max-width" as string]: "42rem",
-      }}
-    >
-      <ThreadPrimitive.Viewport className="flex h-full flex-col items-center overflow-y-scroll scroll-smooth bg-inherit px-4 pt-8">
-        <ThreadWelcome />
+        className="bg-background box-border flex h-full flex-col overflow-hidden"
+        style={{
+          ["--thread-max-width" as string]: "42rem",
+        }}
+      >
+        <ThreadPrimitive.Viewport className="flex h-full flex-col items-center overflow-hidden scroll-smooth bg-inherit px-4 pt-8">
+          <ThreadWelcome />
 
-        <ThreadPrimitive.Messages
-          components={{
-            UserMessage: UserMessage,
-            EditComposer: EditComposer,
-            AssistantMessage: AssistantMessage,
-          }}
-        />
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage: UserMessage,
+              EditComposer: EditComposer,
+              AssistantMessage: AssistantMessage,
+            }}
+          />
 
-        <ThreadPrimitive.If empty={false}>
-          <div className="min-h-8 flex-grow" />
-        </ThreadPrimitive.If>
+          <ThreadPrimitive.If empty={false}>
+            <div className="min-h-8 flex-grow" />
+          </ThreadPrimitive.If>
 
-        <div className="sticky bottom-0 mt-3 flex w-full max-w-[var(--thread-max-width)] flex-col items-center justify-end rounded-t-lg bg-inherit pb-4">
-          <ThreadScrollToBottom />
-          <Composer />
-        </div>
-      </ThreadPrimitive.Viewport>
-    </ThreadPrimitive.Root>
+          <div className="sticky bottom-0 mt-3 flex w-full max-w-[var(--thread-max-width)] flex-col items-center justify-end rounded-t-lg bg-inherit pb-4">
+            <ThreadScrollToBottom />
+            <Composer />
+          </div>
+        </ThreadPrimitive.Viewport>
+      </ThreadPrimitive.Root>
   );
 };
 
@@ -78,7 +82,6 @@ const ThreadWelcome: FC = () => {
             How can I help you today?
           </p>
         </div>
-        <ThreadWelcomeSuggestions />
       </div>
     </ThreadPrimitive.Empty>
   );
@@ -113,25 +116,31 @@ const ThreadWelcomeSuggestions: FC = () => {
 
 const Composer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full flex-wrap items-end rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
+    <ComposerPrimitive.Root className="flex w-full flex-wrap items-end rounded-[10px] border border-gray-600 bg-gray-700 px-3 shadow-sm transition-colors ease-in focus-within:border-blue-500">
       <ComposerPrimitive.Input
         rows={1}
         autoFocus
         placeholder="Write a message..."
-        className="placeholder:text-muted-foreground max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed"
+        className="placeholder:text-gray-400 max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed text-white overflow-hidden"
+        style={{
+          overflow: 'hidden',
+          resize: 'none'
+        }}
       />
       <ComposerAction />
     </ComposerPrimitive.Root>
   );
 };
-
 const ComposerAction: FC = () => {
   return (
     <>
+      {/* Excel Context Button - shows current Excel state */}
+      <ExcelContextButton />
+      
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <TooltipIconButton
-            tooltip="Send"
+            tooltip=""
             variant="default"
             className="my-2.5 size-8 p-2 transition-opacity ease-in"
           >
@@ -142,9 +151,9 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
           <TooltipIconButton
-            tooltip="Cancel"
+            tooltip=""
             variant="default"
-            className="my-2.5 size-8 p-2 transition-opacity ease-in"
+            className="my-2.5 size-5 p-2 transition-opacity ease-in"
           >
             <CircleStopIcon />
           </TooltipIconButton>
@@ -157,8 +166,6 @@ const ComposerAction: FC = () => {
 const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="grid auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 [&:where(>*)]:col-start-2 w-full max-w-[var(--thread-max-width)] py-4">
-      <UserActionBar />
-
       <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-3xl px-5 py-2.5 col-start-2 row-start-2">
         <MessagePrimitive.Content />
       </div>
@@ -205,13 +212,18 @@ const AssistantMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
       <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7 col-span-2 col-start-2 row-start-1 my-1.5">
-        <MessagePrimitive.Content components={{ Text: MarkdownText }} />
+        <MessagePrimitive.Content 
+          components={{ 
+            Text: MarkdownText,
+            tools: {
+              Fallback: ToolFallback
+            }
+          }} 
+        />
         <MessageError />
       </div>
-
-      <AssistantActionBar />
-
       <BranchPicker className="col-start-2 row-start-2 -ml-2 mr-2" />
+      <AssistantActionBar />
     </MessagePrimitive.Root>
   );
 };
@@ -281,15 +293,5 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
 };
 
 const CircleStopIcon = () => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      width="16"
-      height="16"
-    >
-      <rect width="10" height="10" x="3" y="3" rx="2" />
-    </svg>
-  );
+  return <SquareIcon size={16} />;
 };
